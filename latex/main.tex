@@ -1,0 +1,31 @@
+\documentclass[a4paper,12pt]{article}
+
+\input{etc/preamble}
+
+%%% Всю шаблонную информацию можно менять тут
+\newcommand{\FullCourseNameFirstPart}{\so{АРХИТЕКТУРА КОМПЬЮТЕРОВ И}}
+\newcommand{\FullCourseNameSecondPart}{\so{ОПЕРАЦИОННЫЕ СИСТЕМЫ}}
+\newcommand{\SchoolName}{ФПМИ}
+\newcommand{\TrackName}{ПМИ}
+\newcommand{\SemesterNumber}{III}
+\newcommand{\LecturerInitials}{Андреев Александр Николаевич}
+\newcommand{\AutherInitials}{Кирилл Афентьев}
+\newcommand{\VKLink}{https://yandex.ru}
+\newcommand{\GithubLink}{https://github.com/MIPT-Group/Lectures_Tex_Club}
+
+\newcommand{\CourseName}{АКОС} %  Используется в преамбуле для создания названия предмета в верхнем контитуле   
+\newcommand{\CourseDate}{Осень 2022}           %  Используется в преамбуле для создания даты в нижнем контитуле
+
+%\includeonly{lectures/lect01,lectures/lect02}  % Чтобы скомпилировать только часть лекций
+
+\begin{document}
+    \input{etc/title_page}
+    \newpage
+    \hypertarget{intro}{}
+    \tableofcontents
+
+    \input{lectures/lect01.tex}
+    \input{lectures/lect02.tex}
+    \input{lectures/lect03.tex}
+    
+\end{document}
