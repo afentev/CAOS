@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     char digits_buff[BUFF_SIZE];
     char non_digits_buff[BUFF_SIZE];
     int read_chr;
-    while ((read_chr = read(input_d, &buff, BUFF_SIZE))) {
+    while ((read_chr = read(input_d, buff, BUFF_SIZE))) {
         if (read_chr == -1) {
             BAD_ERRNO(errno != EAGAIN && errno != EINTR);
             continue;
@@ -43,10 +43,10 @@ int main(int argc, char** argv)
                 non_digits_buff[non_digits_cnt++] = buff[byte];
             }
         }
-        while (write(output_dig_d, &digits_buff, digits_cnt) < 0) {
+        while (write(output_dig_d, digits_buff, digits_cnt) < 0) {
             BAD_ERRNO(errno != EAGAIN && errno != EINTR);
         }
-        while (write(output_nondig_d, &non_digits_buff, non_digits_cnt) < 0) {
+        while (write(output_nondig_d, non_digits_buff, non_digits_cnt) < 0) {
             BAD_ERRNO(errno != EAGAIN && errno != EINTR);
         }
     }
