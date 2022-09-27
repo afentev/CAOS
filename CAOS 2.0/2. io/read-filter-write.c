@@ -8,6 +8,8 @@
         return 1;                                                              \
     }
 
+#define BUFF_SIZE 1024
+
 int main(int argc, char** argv)
 {
     assert(argc == 4);
@@ -23,18 +25,28 @@ int main(int argc, char** argv)
         BAD_ERRNO(errno != EINTR);
     }
 
-    char buff;
+    char buff[BUFF_SIZE];
+    char digits_buff[BUFF_SIZE];
+    char non_digits_buff[BUFF_SIZE];
     int read_chr;
-    while ((read_chr = read(input_d, &buff, 1))) {
+    while ((read_chr = read(input_d, &buff, BUFF_SIZE))) {
         if (read_chr == -1) {
             BAD_ERRNO(errno != EAGAIN && errno != EINTR);
+            continue;
         }
-        int output_d = output_nondig_d;
-        if ('0' <= buff && buff <= '9') {
-            output_d = output_dig_d;
+        int digits_cnt = 0;
+        int non_digits_cnt = 0;
+        for (int byte = 0; byte < read_chr; ++byte) {
+            if ('0' <= buff[byte] && buff[byte] <= '9') {
+                digits_buff[digits_cnt++] = buff[byte];
+            } else {
+                non_digits_buff[non_digits_cnt++] = buff[byte];
+            }
         }
-        int write_chr = write(output_d, &buff, 1);
-        while (write_chr < 0) {
+        while (write(output_dig_d, &digits_buff, digits_cnt) < 0) {
+            BAD_ERRNO(errno != EAGAIN && errno != EINTR);
+        }
+        while (write(output_nondig_d, &non_digits_buff, non_digits_cnt) < 0) {
             BAD_ERRNO(errno != EAGAIN && errno != EINTR);
         }
     }
