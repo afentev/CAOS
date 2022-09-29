@@ -31,14 +31,6 @@ int close_files(int fd1, int fd2)
     }                                                                          \
     continue;
 
-int min(int a, int b)
-{
-    if (a < b) {
-        return a;
-    }
-    return b;
-}
-
 static const int BUFF_SIZE = 65536;
 
 int radixSort(char* filename)
@@ -140,7 +132,7 @@ int radixSort(char* filename)
         }
 
         seek = 0;
-        while ((res = pread(aux, buff, min(BUFF_SIZE * 4, N * 4 - seek), seek))) {
+        while ((res = pread(aux, buff, BUFF_SIZE * 4, seek))) {
             while (res < 0 || pwrite(fd, buff, res, seek) < 0) {
                 BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
             }
