@@ -73,8 +73,8 @@ int radixSort(char* filename)
 
     uint32_t buff[BUFF_SIZE];
     int res;
-    int cnt = 0;
-    while ((res = pread(fd, buff, BUFF_SIZE * 4, cnt))) {
+    int seek = 0;
+    while ((res = pread(fd, buff, BUFF_SIZE * 4, seek))) {
         if (res < 0) {
             BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
         }
@@ -83,21 +83,21 @@ int radixSort(char* filename)
             // at the end of the sort these bits will be flipped again
             buff[i] ^= 1u << 31;
         }
-        while ((res = pwrite(fd, buff, res, cnt)) < 0) {
+        while ((res = pwrite(fd, buff, res, seek)) < 0) {
             BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
         }
-        cnt += res;
+        seek += res;
     }
     // numbers in file
-    int N = cnt / 4;
+    int N = seek / 4;
 
     memset(buff, 0, BUFF_SIZE * 4);
-    cnt = 0;
-    while (cnt < N * 4) {
-        while ((res = pwrite(aux, buff, BUFF_SIZE * 4, cnt)) < 0) {
+    seek = 0;
+    while (seek < N * 4) {
+        while ((res = pwrite(aux, buff, BUFF_SIZE * 4, seek)) < 0) {
             BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
         }
-        cnt += res;
+        seek += res;
     }
 
     for (size_t byte = 1; byte <= groups; ++byte) {
@@ -105,8 +105,8 @@ int radixSort(char* filename)
         const size_t leftShift = size - groupLength * byte;
         memset(digits, 0, groupSize * 4);
 
-        cnt = 0;
-        while ((res = pread(fd, buff, BUFF_SIZE * 4, cnt))) {
+        seek = 0;
+        while ((res = pread(fd, buff, BUFF_SIZE * 4, seek))) {
             if (res < 0) {
                 BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
             }
@@ -114,18 +114,18 @@ int radixSort(char* filename)
                 uint32_t number = buff[i];
                 ++digits[(number << leftShift) >> rightShift];
             }
-            cnt += res;
+            seek += res;
         }
 
-        cnt = 0;
+        seek = 0;
         for (size_t i = 0; i < groupSize; ++i) {
             int d = digits[i];
-            digits[i] = cnt;
-            cnt += d;
+            digits[i] = seek;
+            seek += d;
         }
 
-        cnt = 0;
-        while ((res = pread(fd, buff, BUFF_SIZE * 4, cnt))) {
+        seek = 0;
+        while ((res = pread(fd, buff, BUFF_SIZE * 4, seek))) {
             if (res < 0) {
                 BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
             }
@@ -136,20 +136,20 @@ int radixSort(char* filename)
                     BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
                 }
             }
-            cnt += res;
+            seek += res;
         }
 
-        cnt = 0;
-        while ((res = pread(aux, buff, min(BUFF_SIZE * 4, N * 4 - cnt), cnt))) {
-            while (res < 0 || pwrite(fd, buff, res, cnt) < 0) {
+        seek = 0;
+        while ((res = pread(aux, buff, min(BUFF_SIZE * 4, N * 4 - seek), seek))) {
+            while (res < 0 || pwrite(fd, buff, res, seek) < 0) {
                 BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
             }
-            cnt += res;
+            seek += res;
         }
     }
 
-    cnt = 0;
-    while ((res = pread(fd, buff, BUFF_SIZE, cnt))) {
+    seek = 0;
+    while ((res = pread(fd, buff, BUFF_SIZE, seek))) {
         if (res < 0) {
             BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
         }
@@ -157,10 +157,10 @@ int radixSort(char* filename)
             // restore sign bit
             buff[i] ^= 1u << 31;
         }
-        while (pwrite(fd, buff, res, cnt) < 0) {
+        while (pwrite(fd, buff, res, seek) < 0) {
             BAD_ERRNO(errno != EINTR && errno != EAGAIN, aux, fd)
         }
-        cnt += res;
+        seek += res;
     }
     return close_files(fd, aux);
 }
