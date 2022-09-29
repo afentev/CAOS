@@ -43,7 +43,7 @@ static const int BUFF_SIZE = 65536;
 
 int radixSort(char* filename)
 {
-    // radix bucket length; 8 gives the best perfomance
+    // radix bucket length; 8 gives the best performance
     const size_t groupLength = 8;
 
     // radix bucket size
