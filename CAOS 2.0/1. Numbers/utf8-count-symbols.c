@@ -14,11 +14,12 @@ uint64_t isAllZeros(uint64_t n)
 
 int main()
 {
-    uint32_t c;
+    int chr;
     int ascii = 0;
     int nonascii = 0;
     int skip = 0;
-    while ((c = getchar()) ^ EOF) {
+    while ((chr = getchar()) ^ EOF) {
+        uint32_t c = chr;
         if (skip) {
             if ((c >> 6) ^ 0b10) {
                 printf("%d %d", ascii, nonascii - 1);
