@@ -1,0 +1,200 @@
+\section{Файлы}
+  \subsection{Файлы и директории}
+    Файл -- это сущность, которая содержит данные и имеет имя.\\
+    В Unix: Everything is a file!
+  
+  \subsubsection{Имя файла}
+    \begin{itemize}
+      \item Не более PATH\_MAX символов: 4 Кб на современных ОС, 256 байт для portability
+      \item PATH\_MAX включает \textbackslash 0 в конце
+      \item Разделитель пути -- /
+      \item Части пути не более 255 символов каждая
+    \end{itemize}
+    
+  \subsubsection{Имя директории}
+    \begin{itemize}
+      \item Абсолютный путь: начинается с корня (например, /Users/carzil/mipt)
+      \item Относительный путь: вычисляется от текущей директории (например, carzil/mipt)
+      \item . -- текущая директория (./carzil/mipt = carzil/mipt и ./carzil/./././mipt = ./carzil/mipt)
+      \item .. -- директорий выше (/Users/carzil/mipt/.. = /Users/carzil)
+    \end{itemize}
+    
+  \subsection{Файловые системы}
+      \begin{itemize}
+        \item Структура данных для организации хранения информации
+        \item Метаданные -- информация о файле: дата последнего изменения, права доступа, создатель и так далее
+        \item Работают поверх хранилища (HDD, SSD, NVMe)
+        \item Хранилище традиционно разбивается на \textit{блоки}
+        \item Размер блоков обычно 512 байт или 4Кб
+      \end{itemize}
+  
+  \subsubsection{ext2}
+    \begin{itemize}
+      \item Linux, 1993 год
+      \item inode -- физическое представление файла на диске: заголовок с метаинформацией + информация где он хранится
+      \item Директории тоже хранятся в inode, так как директория -- файл!
+    \end{itemize}
+
+\begin{figure}[h!]
+  \includegraphics[width=\linewidth]{/Users/user/Downloads/ext2_inode.png}
+  \caption{inode}
+  \label{fig:inode}
+\end{figure}  
+  
+  \subsubsection{ext4}
+    \begin{itemize}
+      \item 2006 год
+      \item Де-факто стандартная файловая система для Linux
+      \item Журналируемая
+      \item Для больших директорий используется HTree
+    \end{itemize}
+  
+    Во времена ext2 была проблема: считалось, что жесткие диски живут долго и работают безотказно, однако на самом деле это было не так. При записи файла, например, могла произойти ошибка на жестком диске, и из-за этого ext2 ломалась. По этой причине в ext3 сделали журнал. Журнал -- это область на диске, в которую записываются логи всех операций, которые выполняются с данными. В ext3 в журнал записываются блоки, которые мы меняем на диске. Если в процессе изменения структуры данных файловой системы случился сбой диска, то в логи не будет записан маркер конца транзакции изменения файловой системы. И когда мы будем восстанавливать файловую систему по журналу, мы просто применим все записанные транзакции и получим какое-то её стабильное состояние. Также у нас есть возможность обратить изменения на диске. Это нам гарантирует, что если посреди операции возникла ошибка, мы не сломаем все данные, и сможем всё восстановить. Журналируемость можно отключить, благодаря этому файловая система будет работать быстрее. \\
+    Еще одно отличие ext2 и ext3: есть директории, в которых находятся очень много файлов. Из-за этого поиск в таких директориях работает долго: нужно пробежаться по всем записям в inode и сравнить названия файлов с тем, что мы ищем. Поэтому в ext3 (и в ext4 соответственно) была создана структура данных HTree, которая хранит кэши файловых имен. Благодаря этому можно за амортизированное $\mathcal{O}(1)$ искать файлы в директориях. Использование HTree тоже можно отключить.
+    
+  \subsubsection{Другие файловые системы}
+    \begin{itemize}
+      \item FAT32
+      \item NTFS (проприетарная, используется в Windows)
+      \item ReiserFS (оптимизирует работу с большим количеством маленьких файлов)
+      \item ZPS (может работать с несколькими устройствами)
+    \end{itemize}
+  
+  \subsubsection{sysfs и procfs}
+    \begin{itemize}
+      \item ``Метафайловые системы''
+      \item Не имеют никаких данных на диске, возвращают информацию напрямую из ядра Linux
+      \item Часто используются, чтобы не добавлять новые сисколлы
+    \end{itemize}
+
+  \subsubsection{FUSE}
+    \begin{itemize}
+      \item Код файловой системы обычно расположен в ядре -- это неудобно
+      \item FUSE = file system in userspace
+    \end{itemize}
+    Когда мы хотим поменять файл, мы сообщаем об этом операционной системе, а та, видя, что мы обращаемся к FUSE-файловой системе, передаст этот запрос процессу файловой системы.\\
+    Пример использования: можно работать с файлами на удаленной машине, как будто они находятся локально на нашем компьютере.  В таком случае все изменения файловой системы будут пересылаться по сети. Это можно сделать при помощи SSHFS.
+  
+  \subsection{Файловые дескрипторы}
+    \begin{itemize}
+      \item Преобразование имени файла в inode -- очень дорогая операция, которая может требовать много обращений к диску
+      \item Этот процесс ``кэшируют'' с помощью файловых дескрипторов
+      \item Файловый дескриптор -- число больше 0
+      \item Новый файловый дескриптор будет минимальным доступным числом
+    \end{itemize}
+  Благодаря файловым дескрипторам можно только один раз делать преобразование имени файла в inode (делая сисколл open). При этом привязка произойдет именно к inode, а не к имени файла.
+    \begin{itemize}
+      \item За каждым файловым дескриптором скрывается \href{https://elixir.bootlin.com/linux/v5.19.12/source/include/linux/fs.h#L925}{специальная структура} в ядре
+      \item Указатель на inode, позиция в файле, флаги (чтения/запись/блокирование), различные локи и так далее
+    \end{itemize}
+  
+    \subsubsection{Работа с данными файла}
+\begin{lstlisting}[style=cpp]
+#include <unistd.h>
+
+int open(const char *pathname, int flags, mode_t mode);
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
+int close(int fd);
+\end{lstlisting}
+    
+    \subsubsection{Работа с метаданными файла}
+\begin{lstlisting}[style=cpp]
+#include <sys/stat.h>
+
+int stat(const char* path, struct stat* buf);
+int fstat(int fd, struct stat *statbuf);
+int lstat(const char* pathname, struct stat* statbuf);
+
+struct stat {
+  dev_t     st_dev;
+  ino_t     st_ino;
+  mode_t    st_mode;
+  nlink_t   st_nlink;
+  uid_t     st_uid;
+  gid_t     st_gid;
+  dev_t     st_rdev;
+  off_t     st_size;
+  blksize_t st_blksize;
+  blkcnt_t  st_blocks;
+  struct timespec st_atime/st_mtime/st_ctime;
+};
+\end{lstlisting}
+    
+    \subsubsection{Права доступа}
+      \begin{itemize}
+        \item rwx = \textbf{R}ead/\textbf{W}rite/e\textbf{X}ecute
+        \item 9 бит, 3 группы; права владельца, права группы и права для остальных
+        \item Часто записываются как числа в восьмиричной системе счисления
+        \item $777_8 = 111111111_2$ = \lsin{rwxrwxrwx}
+        \item $664_8 = 110100100_2$ = \lsin{rw-r--r--}
+      \end{itemize}
+    
+    \subsubsection{Права доступа для директорий}
+      \begin{itemize}
+        \item r -- листинг директории
+        \item w -- создание файлов внутри директории
+        \item x -- возможность перейти в директорию (cd),  а также доступ к файлам
+      \end{itemize}
+    
+    \subsubsection{Регулярные файлы}
+      \begin{itemize}
+        \item \lsin{S_ISREG(stat.st_mode)}
+        \item Обычные файлы с данными
+      \end{itemize}
+    
+    \subsubsection{Директории}
+      \begin{itemize}
+        \item \lsin{S_ISDIR(stat.st_mode)}
+        \item Специальный API для чтения, обычные read/write не работают
+        \item Создание и удаление: mkdir/rmdir
+      \end{itemize}
+    
+\begin{lstlisting}[style=cpp]
+#include <dirent.h>
+
+struct dirent *readdir(DIR *dirp);
+
+struct dirent {
+  ino_t          d_ino;
+  off_t          d_off;
+  unsigned short d_reclen;
+  unsigned char  d_type;
+  char           d_name[256];
+};
+
+int closedir(DIR *dirp);
+\end{lstlisting}
+    
+    \subsubsection{Символические ссылки}
+      \begin{itemize}
+        \item \lsin{S_ISLINK(stat.st_mode)}
+        \item Аналог \lsin{std::weak_ptr} для inode
+        \item Могут быть dangling: то есть ссылаться на файл, которого нет
+        \item Отдельный тип файла
+        \item Путь, на который она ссылается, записан в блоках
+      \end{itemize}
+    
+    \subsubsection{Жесткие ссылки}
+      \begin{itemize}
+        \item Аналог \lsin{std::shared_ptr} для inode
+        \item Только внутри одной файловой системы
+        \item Если количество жестких ссылок стало равно 0, то inode становится свободной
+        \item Не файл, а сущность файловой системы
+      \end{itemize}
+    
+    \subsubsection{Символьные устройства (character device)}
+      \begin{itemize}
+        \item \lsin{S_ISCHR(stat.st_mode)}
+        \item Устройства, из которых можно последовательно читать
+        \item Клавиатура, звуковая карта, сетевая карта
+        \item Такие файлы создаются драйверами ядра
+      \end{itemize}
+    
+    \subsubsection{Блочные устройства (block device)}
+      \begin{itemize}
+        \item \lsin{S_ISBLC(stat.st_mode)}
+        \item Разбиты на блоки одинакового размера
+        \item Можно прочитать любой блок
+        \item HDD, SSD, NAS
+      \end{itemize}
