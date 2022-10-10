@@ -28,9 +28,6 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
-    if (fd == -1) {
-        return 1;
-    }
     struct stat file_stat;
     if (fstat(fd, &file_stat) == -1) {
         close_file(fd);
