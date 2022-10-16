@@ -15,21 +15,32 @@ int main()
     int status;
     if (pid == 0) {
         FILE* file = fopen("aux.c", "w");
-        char program[BUFF_SIZE + 25];
-        memset(program, '\0', BUFF_SIZE + 25);
-        fprintf(file, "int main() {return %s;}", buffer);
+        char program[BUFF_SIZE + 50];
+        memset(program, '\0', BUFF_SIZE + 50);
+        fprintf(
+            file,
+            "#include<stdio.h>\n"
+            "int main() {"
+            "    printf(\"%%d\", (%s));"
+            "}",
+            buffer);
         fflush(file);
-
-        char* argv[] = {"gcc", "-o", "aux.o", "aux.c", NULL};
-        execvp("gcc", argv);
+        execlp("gcc", "gcc", "-w", "-o", "aux", "aux.c", NULL);
+        return 1;
     } else {
         waitpid(pid, &status, 0);
         pid = fork();
         if (pid == 0) {
-            execl("./aux.o", "aux", NULL);
-        } else {
-            waitpid(pid, &status, 0);
-            printf("%d", WEXITSTATUS(status));
+            execl("aux", "aux", NULL);
+            return 1;
         }
+        waitpid(pid, &status, 0);
+        pid = fork();
+        if (pid == 0) {
+            execlp("rm", "rm", "aux.c", "aux", NULL);
+            return 1;
+        }
+        waitpid(pid, &status, 0);
     }
+    return 0;
 }
