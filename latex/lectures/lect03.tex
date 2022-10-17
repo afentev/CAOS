@@ -35,8 +35,9 @@
       \item Директории тоже хранятся в inode, так как директория -- файл!
     \end{itemize}
 
-\begin{figure}[h!]
-  \includegraphics[width=\linewidth]{/Users/user/Downloads/ext2_inode.png}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\linewidth]{/Users/user/Downloads/ext2_inode.png}
   \caption{inode}
   \label{fig:inode}
 \end{figure}  
@@ -89,17 +90,17 @@
     \end{itemize}
   
     \subsubsection{Работа с данными файла}
-\begin{lstlisting}[style=cpp]
+\begin{cminted}
 #include <unistd.h>
 
 int open(const char *pathname, int flags, mode_t mode);
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 int close(int fd);
-\end{lstlisting}
+\end{cminted}
     
     \subsubsection{Работа с метаданными файла}
-\begin{lstlisting}[style=cpp]
+\begin{cminted}
 #include <sys/stat.h>
 
 int stat(const char* path, struct stat* buf);
@@ -119,15 +120,15 @@ struct stat {
   blkcnt_t  st_blocks;
   struct timespec st_atime/st_mtime/st_ctime;
 };
-\end{lstlisting}
+\end{cminted}
     
     \subsubsection{Права доступа}
       \begin{itemize}
         \item rwx = \textbf{R}ead/\textbf{W}rite/e\textbf{X}ecute
         \item 9 бит, 3 группы; права владельца, права группы и права для остальных
         \item Часто записываются как числа в восьмиричной системе счисления
-        \item $777_8 = 111111111_2$ = \lsin{rwxrwxrwx}
-        \item $664_8 = 110100100_2$ = \lsin{rw-r--r--}
+        \item $777_8 = 111111111_2$ = \bmint{rwxrwxrwx}
+        \item $664_8 = 110100100_2$ = \bmint{rw-r--r--}
       \end{itemize}
     
     \subsubsection{Права доступа для директорий}
@@ -139,18 +140,18 @@ struct stat {
     
     \subsubsection{Регулярные файлы}
       \begin{itemize}
-        \item \lsin{S_ISREG(stat.st_mode)}
+        \item \cmint{S_ISREG(stat.st_mode)}
         \item Обычные файлы с данными
       \end{itemize}
     
     \subsubsection{Директории}
       \begin{itemize}
-        \item \lsin{S_ISDIR(stat.st_mode)}
+        \item \cmint{S_ISDIR(stat.st_mode)}
         \item Специальный API для чтения, обычные read/write не работают
         \item Создание и удаление: mkdir/rmdir
       \end{itemize}
     
-\begin{lstlisting}[style=cpp]
+\begin{cminted}
 #include <dirent.h>
 
 struct dirent *readdir(DIR *dirp);
@@ -164,12 +165,12 @@ struct dirent {
 };
 
 int closedir(DIR *dirp);
-\end{lstlisting}
+\end{cminted}
     
     \subsubsection{Символические ссылки}
       \begin{itemize}
-        \item \lsin{S_ISLINK(stat.st_mode)}
-        \item Аналог \lsin{std::weak_ptr} для inode
+        \item \cmint{S_ISLINK(stat.st_mode)}
+        \item Аналог \cppmint{std::weak_ptr} для inode
         \item Могут быть dangling: то есть ссылаться на файл, которого нет
         \item Отдельный тип файла
         \item Путь, на который она ссылается, записан в блоках
@@ -177,7 +178,7 @@ int closedir(DIR *dirp);
     
     \subsubsection{Жесткие ссылки}
       \begin{itemize}
-        \item Аналог \lsin{std::shared_ptr} для inode
+        \item Аналог \cppmint{std::shared_ptr} для inode
         \item Только внутри одной файловой системы
         \item Если количество жестких ссылок стало равно 0, то inode становится свободной
         \item Не файл, а сущность файловой системы
@@ -185,7 +186,7 @@ int closedir(DIR *dirp);
     
     \subsubsection{Символьные устройства (character device)}
       \begin{itemize}
-        \item \lsin{S_ISCHR(stat.st_mode)}
+        \item \cmint{S_ISCHR(stat.st_mode)}
         \item Устройства, из которых можно последовательно читать
         \item Клавиатура, звуковая карта, сетевая карта
         \item Такие файлы создаются драйверами ядра
@@ -193,7 +194,7 @@ int closedir(DIR *dirp);
     
     \subsubsection{Блочные устройства (block device)}
       \begin{itemize}
-        \item \lsin{S_ISBLC(stat.st_mode)}
+        \item \cmint{S_ISBLC(stat.st_mode)}
         \item Разбиты на блоки одинакового размера
         \item Можно прочитать любой блок
         \item HDD, SSD, NAS

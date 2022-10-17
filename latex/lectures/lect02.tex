@@ -2,7 +2,7 @@
   \subsection{Беззнаковые типы}
   \begin{itemize}
     \item Представляют из себя $N$-битные положительные числа на отрезке $[0, 2^N - 1]$
-    \item Переполнение точно определено стандартом C (как сложение в $\mathbb{Z}_{2^N}$)
+    \item Переполнение точно определено стандартом C (как сложение в $\Z_{2^N}$)
     \item $1111+0001=10000=0$
   \end{itemize}
     
@@ -21,7 +21,8 @@
     Сейчас более распространен Little-endian.\\    Традиционно Big-endian используется в передаче данных по сети. Также первые процессоры использовали big-endian. PowerPC тоже использует big-endian.\\
     На некоторых arm-процессорах есть инструкция, позволяющая менять endian ``на лету''. 
     
-\begin{figure}[h!]
+\begin{figure}[H]
+\centering
   \includegraphics[width=\linewidth]{/Users/user/Documents/endianess.png}
   \caption{Endianess}
   \label{fig:endianess}
@@ -31,11 +32,11 @@
   \subsection{Выравнивание}
     \begin{itemize}
       \item Числа быстрее считываются процессором, если они лежат по адресам, кратным их размерам
-      \item Например: \lsin{sizeof(int)} = 4 $\Rightarrow$ выравнивание по границе 4 байт
-      \item \lsin{char} -- 1 байт
-      \item \lsin{short} -- 2 байта
-      \item \lsin{int} -- 4 байта
-      \item \lsin{long long} -- 4 байта
+      \item Например: \cmint{sizeof(int)} = 4 $\Rightarrow$ выравнивание по границе 4 байт
+      \item \cmint{char} -- 1 байт
+      \item \cmint{short} -- 2 байта
+      \item \cmint{int} -- 4 байта
+      \item \cmint{long long} -- 4 байта
     \end{itemize}
     
     Работа с выровненными данными происходит быстрее.\\
@@ -98,7 +99,7 @@
       \item Операции сравнения теперь сложные
       \item Умножение требует sign extension: $0010 = 00000010, 1000 = 11111000$
       \item ``Перекос'' диапазона представимых чисел
-      \item \lsin{abs(INT_MIN)} = ???
+      \item \cmint{abs(INT_MIN)} = ???
     \end{itemize}
   
   \subsection{Действительные числа}
@@ -120,8 +121,8 @@
     \begin{itemize}
       \item Представление: $(-1)^S \times M \times 2^E$
       \item $S$ -- бит знака, $M$ -- мантисса, $E$ - экспонента
-      \item \lsin{float} (single): $|S| = 1$, $|M| = 23$, $|E| = 8$
-      \item \lsin{double}: $|S| = 1$, $|M| = 52$, $|E| = 11$
+      \item \cmint{float} (single): $|S| = 1$, $|M| = 23$, $|E| = 8$
+      \item \cmint{double}: $|S| = 1$, $|M| = 52$, $|E| = 11$
     \end{itemize}
   
   \subsubsection*{Нормализованные значения}
@@ -213,7 +214,8 @@
       \item Переменная длина: от 1 байта (ASCII) до 4 байт
     \end{itemize}
     
-    \begin{figure}[h!]
+    \begin{figure}[H]
+    \centering
   \includegraphics[width=\linewidth]{/Users/user/Documents/utf8.png}
   \caption{UTF-8}
   \label{fig:utf8}
