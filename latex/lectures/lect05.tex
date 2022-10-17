@@ -1,0 +1,200 @@
+\section{Процессы}
+    \begin{itemize}
+      \item POSIX: ``A process is an abstraction thtat represents an executing program. Multiple processes execute independetly and have separate address spaces. Processes can ceate, interrupt, and terminate other processes, subject to secutiry restrictions''
+      \item В самом ядре Linux нет понятия ``процесс'', вместо этого оно оперирует ``тасками''
+      \item То, что в POSIX процесс, в Linux называется thread group
+      \item Процессы объединяются в \textit{группы процессов}
+      \item Группы процессов объединяются в \textit{сессии}
+    \end{itemize}
+  
+  \subsection{Атрибуты процесса}
+    \begin{itemize}
+      \item Сохранённый контекст процессора (регистры)
+      \item Виртуальная память (анонимные, private/shared, файловые)
+      \item Файловые дескрипторы
+      \item Current working directory (cwd)
+      \item Текущий корень (\bmint{man 2 chroot})
+      \item umask
+      \item PID, PPID, TID, TGID, PGID, SID
+      \item Resource limits
+      \item Priority
+      \item Capabilities
+      \item Namespaces
+    \end{itemize}
+  
+  \subsection{Состояния процессов}
+    Runnable -- значит, что процесс прямо сейчас готов исполнять инструкции.
+    Uninterruptibie sleep -- состояние, пока процесс ждет ответа от операционной системы (например, выделяет память)
+    Interruptibie sleep -- состояние, когда процесс ``спит''. Например, мы вызвали \cmint{sleep}
+    Zombie -- это особое состояние, про которое мы поговорим подробнее позже
+    Stopped -- состояние, часто используемое, например, в дебаггерах.
+\begin{figure}[H]
+\centering
+  \includegraphics[width=0.9\linewidth]{/Users/user/Downloads/task-states.png}
+  \caption{Task states}
+  \label{fig:task_states}
+\end{figure}  
+  
+  \subsection{\mintinline{c}{fork}}
+    \begin{itemize}
+      \item Создать новый процесс можно только \textit{скопировав} текущий с помощью \cmint{pid_t fork()}
+      \item \cmint{fork} выйдет в двух процессах одновременно, но в одном вернёт PID ребенка, а в другом -- 0.
+      \item Ребенок будет полностью идентичен родителю, но файловые дескрипторы и адресное пространство будут \textit{скопированы}
+      \item Для оптимизации потребления памяти используется copy-on-write подход для копирования памяти 
+    \end{itemize}
+\begin{cminted}
+pid_t pid = fork();
+if (pid < 0) {
+  // error! can't create new process
+} else if (pid == 0) {
+  // We're in fork's child
+  // getpid() returns current pid
+} else {
+  // We're in fork's parent and pid is the child's pid
+}
+\end{cminted}
+Есть системный вызов \cmint{getpid}, возвращающий PID текущего процесса.
+
+  \subsection{\cmint{execve}}
+    \begin{itemize}
+      \item Создавать копии недостаточно, нужно уметь запускать произвольные файлы
+      \item Для этого используется системный вызов \cmint{execve}
+      \item Он заменяет текущий процесс процессом, созданным из указанного файла
+      \item Это называется заменой образа процесса: заменяются только части адресного пространства 
+      \item Также в новом образе процесса останутся незакрытые файловые дескрипторы, не помеченные флагов \cmint{O_CLOEXEC}
+    \end{itemize}
+
+\begin{cminted}
+extern char **environ;
+int exec1(const char* path, const char* arg0, ...);
+int execle(const char* path, const char* arg0, ...);
+int execlp(const char* file, const char* arg0, ...);
+int execv(const char* path, char* const argv[]);
+int execve(const char* path, char* const argv[],
+           char* const envp[]);  // system call!
+int execvp(const char* file, char* const argv[]);
+int fexecve(int fd, char* const argv[], char* const envp[]);
+\end{cminted}
+
+  \subsubsection{\cmint{execve}: сохраняемые атрибуты}
+    \begin{itemize}
+      \item В отличие от \cmint{fork} сохраняет меньше атрибутов
+      \item Файловые дескрипторы (не помеченные флагом \cmint{O_CLOEXEC)}
+      \item cwd и root
+    \end{itemize}
+  
+\begin{cminted}
+pid_t pid = fork();
+if (pid == -1) {
+  
+} else if (pid == 0) {
+  char* argv[] = {"ls", "-lah", NULL};
+  char* envp[] = {"FOO=bar", "XYZ=abc", NULL};
+  execve("/usr/bin/ls", argv, envp);
+  // if you ended up here, something went wrong!
+} else {
+
+}
+\end{cminted}
+
+  \subsection{Атрибуты процесса: PID, PPID, TGID, ...}
+    \begin{itemize}
+      \item PID = process ID
+      \item PPID = parent process ID
+      \item PGID = process group ID
+      \item SID = session ID
+      \item \cmint{pid_t getpid()}, \cmint{pid_t, getpid()}, \cmint{pid_t getid()}
+      \item \cmint{pid_t getpgid()}, \cmint{int setpgid(pid_t pid, pid_t pgid)}
+      \item \cmint{pid_t setid()}, \cmint{pid_t getsid(pid_t pid)}
+      \item \bmint{/proc/<pid>/status} ИЛИ В \bmint{/proc/<pid>/stat}
+    \end{itemize}
+
+  \subsection{Атрибуты владельца процесса}
+    \begin{itemize}
+      \item UID (user ID или real user ID) -- ID владельца процесса, \cmint{void setuid(uid_t)}
+      \item EUID (effective user ID) используется для проверок доступа, \cmint{seteuid(uid_t)}
+      \item SUID (saved user ID) используется, чтобы можно было временно пониизть привилегии
+      \item FSUID (file system user ID) обычно совпадает с EUID, но может быть отдельно изменен через \cmint{int setfsuid(uid_t fsuid)}
+      \item Непривилегированный процесс может выставлять EUID равный только в SUID, UID или опять в EUID
+      \item Также есть понятие setuid/setgid флагов (sticky flags), в отличие от обычных файлов, EUID такого процесса будет выставлен как UID \textit{владельца файла}, а не \textit{текущий пользователь}
+      \item Есть аналогичные GID, EGID, SGID, FSGID
+    \end{itemize}
+  
+  \subsection{Работа с процессами}
+  \subsubsection{exit}
+    \begin{itemize}
+      \item Завершает текущий процесс с определенным \textit{кодом возврата} (exit code)
+      \item \cmint{exit} vs \cmint{_exit}
+      \item Чтобы завершить текущую thread group можно воспользоваться \cmint{exit_group}
+      \item exit закрывает все открытые файловые дескрипторы, освобождает выделенные страницы, etc
+      \item Если у процесса были дети, то их родителем станет процесс с PID == 1
+      \item После этого процесс становится \textit{зомби-процессом}
+      \item Ядро не хранит огромную структуру для него, а только его PID и exit code
+    \end{itemize}
+  
+  \subsubsection{wait}
+    \begin{itemize}
+      \item Дожидается, пока процесс будет остановлен
+      \item Для этого использются системные вызовы семейства \cmint{wait*}
+      \item Они дожидаются завершения процесса (конкретного или любого) и возвращают специальный \textit{exit status}
+      \item Обычно exit status содержит то, что передали в \mintinline{c}{exit}
+    \end{itemize}
+
+\begin{cminted}
+pid_t wait(int* stat_loc);
+pid_t waitpid(pid_t pid, int* stat_loc, int options);
+pid_t wait3(int* stat_loc, int options, struct rusage* rusage);
+pid_t wait4(pid_t pid, int* stat_loc, int options,
+            struct rusage* rusage);  // system call!
+\end{cminted}
+
+  \subsection{wait4}
+    \begin{itemize}
+      \item \cmint{pid < 1}: ждёт любой дочерний процесс в группе процессов \cmint{-pid}
+      \item \cmint{pid == -1}: ждёт любой дочерний процесс
+      \item \cmint{pid == 0}: ждёт любой дочерний процесс в текущей группе процессов
+      \item \cmint{pid > 0}: ждёт конкретного ребенка
+    \end{itemize}
+  
+  \subsubsection{Макросы для wait4}
+\begin{cminted}
+WIFEXITED(status)  // did the process terminate itself?
+WEXITSTATUS(status)  // get exit status
+WIFSIGNALED(status)  // did the process terminate by a signal?
+WTEMSIG(status)  // get the signal
+WCOREDUMP(status)  // did the process leave a coredump?
+\end{cminted}
+
+  \subsection{Лимит ресурсов процессов}
+    \begin{itemize}
+      \item Лимиты делятся на два типа: soft и hard
+      \item Soft-лимит или текущий лимит -- по нему вычисляются проверки
+      \item Hard-лимит -- максимальное значение soft-лимита
+      \item CPU-время, если процесс его превысит ему ядро отошлет \textbf{SIGXCPI}, если превысит hard-лимит, то \textbf{SIGKILL}
+      \item Размер записываемых файлов: write будет возвращать \textbf{EFBIG}
+      \item Размер записываемых coredump-файлов
+      \item На максимальный размер виртуальной памяти, выделенной процессу
+      \item Количество одновременных процессов пользователя
+      \item Количество файловых дескрипторов
+    \end{itemize}
+
+\begin{cminted}
+#include <sys/time.h>
+#include <sys/resource.h>
+
+struct rlimit {
+  rlim_t rlim_cur;  /* Soft limit */
+  rlim_t rlim_max;  /* Hard limit (ceiling for rlim_cur) */
+};
+
+int getrlimit(int resource, struct rlimit* rlim);
+int setrlimit(int resource, const struct rlimit* rlim);
+\end{cminted}
+  
+  \subsection{Механизмы изоляции}
+    \begin{itemize}
+      \item \mintinline{bash}{man 7 namespaces} и \mintinline{bash}{man 7 cgroups}
+      \item Linux namespaces изолируют части отдельные процессов
+      \item CGroups (control groups) обычно ограничивают потребляемое процессорное время и память
+      \item Существующие неймспейсы: cgroup, IPC, network, mount, PID, time, UTS
+    \end{itemize}
