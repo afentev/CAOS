@@ -4,6 +4,7 @@
 \usepackage[utf8]{inputenc}               % кодировка исходного текста
 \usepackage[english, russian]{babel}   % локализация и переносы
 
+\usepackage{minted}
 
 %%% Страница 
 \usepackage{extsizes} % Возможность сделать 14-й шрифт
@@ -144,61 +145,44 @@
   columns = flexible
 }
 
-% define some basic colors
-\definecolor{mauve}{rgb}{0.58,0,0.82}
+\usepackage{xpatch}
+\xpatchcmd{\minted}{\VerbatimEnvironment}{\VerbatimEnvironment\let\itshape\relax}{}{}
+\usepackage{tcolorbox}
+\usepackage{etoolbox}
+\BeforeBeginEnvironment{minted}{\begin{tcolorbox}[
+                  leftrule=0.5pt,
+                  rightrule=0.5pt,
+                  toprule=0.5pt,
+                  bottomrule=0.5pt,
+                  boxsep=0pt,
+                  left=0pt,
+                  right=0pt,
+                  top=-1.7pt,
+                  bottom=-1.7pt
+                  ]}%
+\AfterEndEnvironment{minted}{\end{tcolorbox}}%
 
-\lstdefinestyle{asm}{
-    belowcaptionskip=1\baselineskip,
-    frame=single, 
-    frameround=tttt,
-    xleftmargin=\parindent,
-    language=[x86masm]Assembler,
-    basicstyle=\footnotesize\ttfamily,
-    commentstyle=\itshape\color{green!60!black},
-    keywordstyle=\color{blue!80!black},
-    identifierstyle=\color{red!80!black},
-    tabsize=4,
-    numbers=left,
-    numbersep=8pt,
-    stepnumber=1,
-    numberstyle=\tiny\color{gray}, 
-    columns = fullflexible,
-    basicstyle=\fontsize{13}{13}\ttfamily
-}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
 
-\lstdefinestyle{cpp}{
-    belowcaptionskip=1\baselineskip,
-    frame=single, 
-    frameround=tttt,
-    xleftmargin=\parindent,
-    language=[11]C++,
-    basicstyle=\footnotesize\ttfamily,
-    commentstyle=\itshape\color{green!60!black},
-    keywordstyle=\color{blue!80!black},
-    identifierstyle=\color{red!80!black},
-    tabsize=4,
-    numbers=left,
-    numbersep=8pt,
-    stepnumber=1,
-    numberstyle=\tiny\color{gray}, 
-    columns = fullflexible,
-    basicstyle=\fontsize{13}{13}\ttfamily
-}
+\newminted[cminted]{c}{
+  numbersep=5pt,
+  framesep=2mm,
+  baselinestretch=1.2,
+  bgcolor=bg,
+  linenos}
 
-\lstset{
-  basicstyle=\fontsize{13}{13}\ttfamily,
-  breaklines=true,                              % break long lines
-  commentstyle=\itshape\color{green!50!black},  % comments are green
-  keywordstyle=[1]\color{blue!80!black},        % instructions are blue
-  keywordstyle=[2]\color{orange!80!black},      % sections/other directives are orange
-  keywordstyle=[3]\color{red!50!black},         % registers are red
-  stringstyle=\color{mauve},                    % strings are from the telekom
-  identifierstyle=\color{teal},                 % user declared addresses are teal
-  frame=l,                                      % black line on the left side of code
-  language=[x86masm]Assembler,                   % all code is RISC-V
-  tabsize=4,                                    % indent tabs with 4 spaces
-  showstringspaces=false                        % do not replace spaces with weird underlines,
-}
+% https://github.com/heia-fr/pygments-arm
+\newminted[asmminted]{ARM}{ 
+  numbersep=5pt,
+  framesep=2mm,
+  baselinestretch=1.2,
+  bgcolor=bg,
+  linenos}
+
+\newmintinline[asmmint]{ARM}{}
+\newmintinline[cppmint]{cpp}{}
+\newmintinline[cmint]{c}{}
+\newmintinline[bmint]{bash}{}
                   
 \newcommand\round[1]{\left[#1\right]}
 
