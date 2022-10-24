@@ -1,0 +1,156 @@
+\subsection{ELF}
+  \begin{itemize}
+    \item Executable \& Linkable Format
+    \item Исполняемый формат файлов для Linux
+    \item Поддерживает разные архитектуры и битности
+    \item \href{http://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf}{Спецификация}
+    \item \href{https://github.com/torvalds/linux/blob/master/include/uapi/linux/elf.h}{Структуры внутри ядра}
+  \end{itemize}
+
+\begin{figure}[H]
+\centering
+  \includegraphics[width=0.7\linewidth]{/Users/user/Downloads/elf-structure.png}
+  \caption{ELF structure}
+  \label{fig:elf_structure}
+\end{figure} 
+  
+\subsection{ELF: header}
+
+\begin{cminted}
+typedef struct elf64_hdr {
+  unsigned char  e_ident[EI_NIDENT];  /* ELF "magic number" */
+  Elf64_Half e_type;
+  Elf64_Half e_machine;
+  Elf64_Word e_version;
+  Elf64_Addr e_entry;    /* Entry point virtual address */
+  Elf64_Off e_phoff;    /* Program header table file offset */
+  Elf64_Off e_shoff;    /* Section header table file offset */
+  Elf64_Word e_flags;
+  Elf64_Half e_ehsize;
+  Elf64_Half e_phentsize;
+  Elf64_Half e_phnum;
+  Elf64_Half e_shentsize;
+  Elf64_Half e_shnum;
+  Elf64_Half e_shstrndx;
+} Elf64_Ehdr;
+\end{cminted}
+
+\subsubsection{ELF: секции}
+  \begin{itemize}
+    \item Секции хранят непосрдественно данные
+    \item Каждая секция имеет своё имя
+    \item Перечень всех секций хранит \textit{таблица секций}
+  \end{itemize}
+    
+  \begin{itemize}
+    \item .data -- данные
+    \item .text -- исполняемый код
+    \item .rodata -- read-only данные
+    \item .symtab -- таблица символов
+    \item .strtab -- таблица строк
+    \item .shstrtab -- таблица строк с названием секций
+    \item .rel/.rela -- таблица релокаций
+  \end{itemize}
+  
+\subsubsection{ELF: .symtab}
+  \begin{cminted}
+typedef struct {
+    uint32_t      st_name;
+    unsigned char st_info;
+    unsigned char st_other;
+    uint16_t      st_shndx;
+    Elf64_Addr    st_value;
+    uint64_t      st_size;
+} Elf64_Sym;
+  \end{cminted}
+  
+\subsubsection{ELF: сегменты}
+  \begin{itemize}
+    \item Все секции объединяются в \textit{сегменты}
+    \item Каждый сегмент имеет адрес, по которому он загружается
+    \item Program header array содержит все сегменты, располагается в начале файла
+  \end{itemize}
+  
+\subsubsection{ELF: program header}
+  \begin{cminted}
+typedef struct elf64_phdr {
+  Elf64_Word p_type;
+  Elf64_Word p_flags;
+  Elf64_Off p_offset;    /* Segment file offset */
+  Elf64_Addr p_vaddr;    /* Segment virtual address */
+  Elf64_Addr p_paddr;    /* Segment physical address */
+  Elf64_Xword p_filesz;    /* Segment size in file */
+  Elf64_Xword p_memsz;    /* Segment size in memory */
+  Elf64_Xword p_align;    /* Segment alignment, file & memory */
+} Elf64_Phdr;
+  \end{cminted}
+
+Разница между \cmint{p_memsz} и \cmint{p_filesz} существует и обуславливается наличием сегмента .bss, в котором хранятся статические переменные, инициализирируемые нулями. Такие переменные не хранятся на диске, но при запуске программы место под них отводится. Поэтому \cmint{p_filesz} -- это размер на диске, а \cmint{p_memsz} -- размер загружаемого файла.
+
+\subsection{execve}
+  \begin{itemize}
+    \item Парсит первые несколько байт файла
+    \item Ищет ELF magic или shebang
+    \item Загружает образ (mmap'ит)
+    \item Подготавливает окружение для старта процесса (стек, переменные окружение, etc)
+    \item Запускает инструкцию по адресу \cmint{e_entry}
+  \end{itemize}
+  
+\section{Linux scheduler}
+  \subsection{Realtime scheduling}
+    \begin{itemize}
+      \item У каждого процесса есть собственный realtime приоритет
+      \item Планировщик ищет процесс с наибольшим приоритетом и запускает его, пока он не выйдет
+      \item Вытеснения нет!
+      \item Round-robin для процессов с одним приоритетом
+    \end{itemize}
+  
+  \subsection{Process niceness}
+    \begin{itemize}
+      \item Значения от -20 до +19
+      \item Процесс с меньшим niceness должен получать больше процессорного времени
+    \end{itemize}
+  
+  \subsubsection{Timeslice}
+    \begin{itemize}
+      \item Квант процессорного времени
+      \item В зависимости от типа системы от 1мс до 10-20мс
+      \item CPU bound процессы: в основном выполняют инструкции
+      \item I/O bound процессы: в основном спят
+    \end{itemize}
+  
+  \subsubsection{Timeslice \& niceness}
+    \begin{itemize}
+      \item Зададим каждому приоритету определённый timeslice (например, 0 = 100ms, +20 = 5ms)
+      \item Процессы с меньшим NI получают больше процессорного времени
+    \end{itemize}
+  
+  \subsubsection{Timeslice \& niceness: проблемы подхода}
+    \begin{itemize}
+      \item Два процесса с NI = +19 и два процесса с NI = 0
+      \item Первые получают по 5ms процессорного времени
+      \item Вторые по 100ms
+      \item В обоих случаях 50\% CPU, но переключение контекста у первых происходит чаще
+    \end{itemize}
+  
+    И другие проблемы:
+    \begin{itemize}
+      \item Два процесса NI = 0 и NI = 1 vs два процесса NI = +18 и NI = +19
+      \item \bmint{5ms/10ms} vs \bmint{95ms/105ms}
+      \item Нелинейность относительно стартового значения
+    \end{itemize}
+  
+  \subsection{completely Fair Scheduler}
+    \begin{itemize}
+      \item Эмулирует идеальный multitasking процессор
+      \item Идея -- раздавать процессам время пропорциональное 1/N, где N -- количество запущенных процессов
+      \item Каждому процессу начисляется \cmint{vruntime} -- количество затраченного CPU времени за определенный интервал времени
+      \item Очередным берётся процесс с наименьшим \cmint{vruntime}
+    \end{itemize}
+  
+  \subsubsection{CFS: проблемы}
+    \begin{itemize}
+      \item Минимальное время (гранулярность) $\Rightarrow$ чем больше процессов, тем менее честным становится CFS
+      \item Context switch считается zero-time операцией, но по факту это не так
+    \end{itemize}
+

@@ -24,8 +24,8 @@
   
   \subsection{Состояния процессов}
     Runnable -- значит, что процесс прямо сейчас готов исполнять инструкции.
-    Uninterruptibie sleep -- состояние, пока процесс ждет ответа от операционной системы (например, выделяет память)
-    Interruptibie sleep -- состояние, когда процесс ``спит''. Например, мы вызвали \cmint{sleep}
+    Uninterruptible sleep -- состояние, пока процесс ждет ответа от операционной системы (например, выделяет память)
+    Interruptible sleep -- состояние, когда процесс ``спит''. Например, мы вызвали \cmint{sleep}
     Zombie -- это особое состояние, про которое мы поговорим подробнее позже
     Stopped -- состояние, часто используемое, например, в дебаггерах.
 \begin{figure}[H]
@@ -65,7 +65,7 @@ if (pid < 0) {
     \end{itemize}
 
 \begin{cminted}
-extern char **environ;
+extern char** environ;
 int exec1(const char* path, const char* arg0, ...);
 int execle(const char* path, const char* arg0, ...);
 int execlp(const char* file, const char* arg0, ...);

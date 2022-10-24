@@ -93,9 +93,9 @@
 \begin{cminted}
 #include <unistd.h>
 
-int open(const char *pathname, int flags, mode_t mode);
-ssize_t read(int fd, void *buf, size_t count);
-ssize_t write(int fd, const void *buf, size_t count);
+int open(const char* pathname, int flags, mode_t mode);
+ssize_t read(int fd, void* buf, size_t count);
+ssize_t write(int fd, const void* buf, size_t count);
 int close(int fd);
 \end{cminted}
     
@@ -104,7 +104,7 @@ int close(int fd);
 #include <sys/stat.h>
 
 int stat(const char* path, struct stat* buf);
-int fstat(int fd, struct stat *statbuf);
+int fstat(int fd, struct stat* statbuf);
 int lstat(const char* pathname, struct stat* statbuf);
 
 struct stat {
@@ -154,7 +154,7 @@ struct stat {
 \begin{cminted}
 #include <dirent.h>
 
-struct dirent *readdir(DIR *dirp);
+struct dirent* readdir(DIR* dirp);
 
 struct dirent {
   ino_t          d_ino;
@@ -164,7 +164,7 @@ struct dirent {
   char           d_name[256];
 };
 
-int closedir(DIR *dirp);
+int closedir(DIR* dirp);
 \end{cminted}
     
     \subsubsection{Символические ссылки}
