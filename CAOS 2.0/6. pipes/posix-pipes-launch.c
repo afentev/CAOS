@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -27,18 +28,19 @@ int main(int argc, char* argv[])
     close(main_write2child[0]);
     close(child_write2main[1]);
 
-    FILE* file = fopen(argv[2], "r");
-    int chr;
-    while ((chr = getc(file)) != EOF) {
-        write(main_write2child[1], &chr, 1);
+    int fd = open(argv[2], O_RDONLY);
+    char buff[1024];
+    ssize_t got;
+    while ((got = read(fd, buff, 1024)) > 0) {
+        write(main_write2child[1], buff, got);
     }
     close(main_write2child[1]);
-    fclose(file);
+    close(fd);
 
     waitpid(pid, NULL, 0);
     size_t count = 0;
-    while (read(child_write2main[0], &chr, sizeof(char)) > 0) {
-        ++count;
+    while ((got = read(child_write2main[0], buff, 1024)) > 0) {
+        count += got;
     }
     close(child_write2main[0]);
     printf("%zu", count);
