@@ -124,7 +124,7 @@ if (pid == -1) {
   \subsubsection{exit}
     \begin{itemize}
       \item Завершает текущий процесс с определенным \textit{кодом возврата} (exit code)
-      \item \cmint{exit} vs \cmint{_exit}
+      \item \cmint{exit} vs. \cmint{_exit}
       \item Чтобы завершить текущую thread group можно воспользоваться \cmint{exit_group}
       \item exit закрывает все открытые файловые дескрипторы, освобождает выделенные страницы, etc
       \item Если у процесса были дети, то их родителем станет процесс с PID == 1

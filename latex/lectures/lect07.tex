@@ -1,0 +1,257 @@
+\section{Сигналы}
+  \begin{itemize}
+    \item Асинхронное событие, которое может произойти после любой инструкции
+    \item Используются для уведомления процессов о каких-то событиях
+    \item Сигнал можно либо обрабатывать, либо игнорировать
+    \item Однако \cmint{SIGKILL} и \cmint{SIGSTOP} нельзя обработать или проигнорировать
+  \end{itemize}
+
+  \subsection{Сигналы: примеры}
+    \begin{itemize}
+      \item Нажатие \bmint{^C} (Ctrl+C) в терминале генерирует \bmint{SIGINT}
+% looking weird
+      \item Нажатие \bmint{^}\cmint{\} (Ctrl+Backslash) в терминале генерирует \bmint{SIGQUIT}
+      \item Запись в пайп только с write-концом генерирует \bmint{SIGPIPE}
+      \item вызов \bmint{abort()} приводит к \bmint{SIGABORT}
+      \item Обращение к несуществующей памяти генерирует \bmint{SIGSEGV}
+    \end{itemize}
+  
+  \subsection{Доставка сигналов}
+    \begin{itemize}
+      \item Сигналы могут быть доставлены от ядра (например, \bmint{SIGKILL}, \bmint{SIGPIPE})
+      \item Либо от другого процесса (\bmint{SIGHUP}, \bmint{SIGINT}, \bmint{SIGUSR})
+      \item Или процесс может послать сигнал сам себе (\bmint{SIGABRT})
+      \item Сигналы могут быть доставлены в \textit{любой момент} выполнения программы
+    \end{itemize}
+  
+  \subsection{Signal safety}
+    \begin{itemize}
+      \item Во время обработки сигналы процессы могут быть в критической секции
+      \item Поэтому в обработчиках сигналов нельзя использовать, например, \cmint{printf}
+      \item Можно использовать только async-signal-safe функции
+      \item \bmint{man 7 signal-safety}
+    \end{itemize}
+  
+  \subsection{Обработка сигналов}
+    \begin{cminted}
+void signal_handler(int sig) {
+  // ...
+}
+
+int main() {
+  signal(SIGINT, signal_handler);
+  signal(SIGTERM, signal_handler);
+  signal(SIGSEGV, SIG_IGN);
+  signal(SIGABRT, SIG_DFL);
+}      
+    \end{cminted}
+    
+  \subsection{Посылка сигналов}
+    \begin{cminted}
+#include <signal.h>
+
+int raise(int sig);
+int kill(pid_t pid, int sig);
+    \end{cminted}
+Название \cmint{kill} существует по историческим причинам: раньше был только один сигнал -- \bmint{SIGKILL}.
+  
+  \subsubsection{Посылка сигналов: аргументы kill}
+    \begin{itemize}
+      \item Если \cmint{pid == 0}, то сигнал будет доставлен текущей группе процессов
+      \item Если \cmint{pid > 0}, то сигнал будет доставлен процессу pid
+      \item Если \cmint{pid == -1}, то сигнал будет всем процессам, которым текущий процесс может его отправить
+      \item Если \cmint{pid < -1}, то сигнал будет доставлен группе процессов \cmint{-pid}
+      \item Если \cmint{sig == 0}, то сигнал не будет никому отправлен, а будет только осуществлена проверка ошибок (dry run)
+      \item Возврат из kill не гарантирует, что сигнал обработался в получателе(-ях)!
+    \end{itemize}
+  
+  \subsection{Доставка сигналов: маски сигналов}
+    \begin{itemize}
+      \item Маска сигналов — bitset всех сигналов
+      \item У процесса есть две маски сигналов: \textit{pending} и \textit{blocked}
+      \item pending — это те сигналы, которые должны быть доставлены, но ещё не успели
+      \item Из этого следует, что если несколько раз отправить сигнал в один процесс, то он может быть обработан лишь единожды
+      \item blocked — это те сигналы, которые процесс блокирует (блокировать и игнорировать — разные вещи)
+      \item Если сигнал заблокирован, это значит, что он не будет доставлен вообще, если проигнорирован — то у него просто пустой обработчик
+    \end{itemize}
+    
+    \begin{cminted}
+#include <signal.h>
+
+int sigemptyset(sigset_t* set);
+int sigfillset(sigset_t* set);
+int sigaddset(sigset_t* set, int signum);
+int sigdelset(sigset_t* set, int signum);
+int sigismember(const sigset_t* set, int signum);
+    \end{cminted}
+
+  \subsubsection{Доставка сигналов: \cmint{sigprocmask}}
+    \begin{itemize}
+      \item \cmint{int sigprocmask(int h, sigset_t *set, sigset_t *oset);}
+      \item SIG\_SETMASK — установить маску заблокированных сигналов
+      \item SIG\_BLOCK — добавить сигналы \cmint{set} в заблокированные
+      \item SIG\_UNBLOCK — удалить сигналы \cmint{set} из заблокированных
+      \item Если \cmint{oset != NULL}, то туда будет записана предыдущая маска
+    \end{itemize}
+  
+  \subsection{Обработка сигналов: \cmint{sigaction}}
+    \begin{cminted}
+#include <signal.h>
+
+int sigaction(int signum, const struct sigaction* act,
+              struct sigaction* oldact);
+
+struct sigaction {
+  void     (*sa_handler)(int);
+  void     (*sa_sigaction)(int, siginfo_t*, void*);
+  sigset_t   sa_mask;
+  int        sa_flags;
+};  
+    \end{cminted}
+
+    \begin{itemize}
+      \item Выставляет обычный обработчик \cmint{sa_handler}
+      \item Или расширенный: \cmint{sa_sigaction}
+      \item При выполнении сигнала \cmint{signum} в заблокированные сигналы добавятся сигналы из \cmint{sa_mask}, а также сам сигнал
+      \item \cmint{sa_flags} — флаги, меняющие поведение обработки
+      \item Чтобы использовать \cmint{sa_sigaction}, нужно выставить \cmint{SA_SIGINFO}
+      \item Если выставить \cmint{SA_RESETHAND}, то обработчик сигнала будет сброшен на дефолтный после выполнения
+      \item Если выставить \cmint{SA_NODEFER}, то если сигнал не был в \cmint{sa_mask}, обработчик может быть прерван самим собой
+    \end{itemize}
+  
+  \subsubsection{Обработка сигналов: \cmint{siginfo_t}}
+    \begin{cminted}
+#include <signal.h>
+
+siginfo_t {
+  int      si_signo;     int      si_overrun;
+  int      si_errno;     int      si_timerid;
+  int      si_code;      void*    si_addr;
+  int      si_trapno;    long     si_band;
+  pid_t    si_pid;       int      si_fd;
+  uid_t    si_uid;       short    si_addr_lsb;
+  int      si_status;    void*    si_lower;
+  clock_t  si_utime;     void*    si_upper;
+  clock_t  si_stime;     int      si_pkey;
+  sigval_t si_value;     void*    si_call_addr;
+  int      si_int;       int      si_syscall;
+  void*    si_ptr;       unsigned int si_arch;
+}  
+    \end{cminted}
+  
+  \subsection{SIGCHLD}
+    \begin{itemize}
+      \item Еще один способ уведомлять процессы о завершении дочерних
+      \item \cmint{si_status} хранит информацию о том, как завершился процесс (\cmint{CLD_KILLED}, \cmint{CLD_STOPEED}, etc)
+      \item \cmint{si_pid} хранит PID дочернего процесса
+      \item Если выставить \cmint{SIG_IGN}, то зомби не будут появляться
+    \end{itemize}
+  
+  \subsection{Доставка сигналов во время системных вызовов}
+    \begin{itemize}
+      \item Если сигнал прервал выполнение блокирующего сисколла, то есть два поведения
+      \item Если использован \cmint{sigaction} и в \cmint{sa_flags} есть \cmint{SA_RESTART}, то после того, как обработчик завершится, сисколл продолжит свою работу (syscall restarting)
+      \item Если не указан, то сисколл вернёт ошибку и \cmint{errno == EINTR}
+    \end{itemize}
+
+  \subsection{Ожидание сигналов: \cmint{pause}, \cmint{sigsuspend} и \cmint{sigwaitinfo}}
+    \begin{itemize}
+      \item \cmint{int pause(void)}
+      \item Блокируется до первой доставки сигналов (которые не заблокированы)
+      \item \cmint{int sigsuspend(const sigset_t* mask)}
+      \item Атомарно заменяет маску заблокированных сигналов на mask и ждёт первой доставки сигналов
+      \item \cmint{int sigwaitinfo(const sigset_t* restrict set, siginfo_t* restrict info)}
+      \item Требует вызова \todo{что-то}
+    \end{itemize}
+  
+  \subsection{Как устроены сигналы?}
+    \begin{itemize}
+      \item Ядро проверяет, нужно ли доставить сигнал в текущий процесс (при выходе из сисколла, или в S-состоянии, или по таймеру)
+      \item Конструируется специальный отдельный стек (\cmint{sigaltstack})
+      \item В начало стека кладётся фрейм, который содержит информацию о прерванной инструкции (\cmint{siginfo_t->ucontext})
+      \item Ядро «прыгает» в обработчик события, выполняя его на этом стеке
+      \item Обработчик завершается и вызывает \cmint{sigreturn}
+      \item Ядро возвращается в предыдущий стек, инструкцию и так далее
+    \end{itemize}
+  
+  \subsection{Наследование сигналов: fork и execve}
+    \begin{itemize}
+      \item \cmint{fork} сохраняет маску сигналов и назначенные обработчики
+      \item \cmint{execve} сохраняет \textbf{\textit{только}} маску заблокированных сигналов
+    \end{itemize}
+  
+  \subsection{Почему сигналы -- это плохо?}
+    \begin{itemize}
+      \item Почти невозможно обработать сигналы без race condition'ов
+      \item Обработчики сигналов могут вызываться во время работы других обработчиков
+      \item Посылка нескольких сигналов может привести к посылке только одного
+      \item Не используйте сигналы для IPC (interprocess communication)!
+    \end{itemize}
+  
+  Если в процессе несколько тредов, какой из них получит сигнал?
+\begin{quote}\itshape
+[...] A process-directed signal may be delivered to any one of the
+threads that does not currently have the signal blocked.  If more
+than one of the threads has the signal unblocked, then the kernel
+chooses an arbitrary thread to which to deliver the signal [...]
+\end{quote}
+
+  \subsection{Почему лучше всегда использовать sigaction?}
+    \begin{itemize}
+      \item Война поведений: BSD vs System-V
+      \item В отличие от BSD, в System-V обработчик сигнала выполняется единожды, после чего сбрасывается на обработчик по умолчанию
+      \item В BSD обработчик сигнала не будет вызван, если в это время уже выполняется обработчик того же самого сигнала
+      \item В BSD используется syscall restarting, в System-V — нет
+      \item BSD (\cmint{_BSD_SOURCE} или \cmint{-std=c99}): \cmint{SA_RESTART}
+      \item System-V (\cmint{_GNU_SOURCE} или \cmint{-std=gnu99}): \cmint{SA_NODEFER|SA_RESETHAND}
+      \item Всегда лучше использовать \cmint{sigaction} для однозначности поведения программы!
+    \end{itemize}
+  
+  \subsection{Real-time signals}
+    \begin{itemize}
+      \item При посылке сигналов учитывается их количество и порядок
+      \item Отделены от обычных: начинаются с \cmint{SIGRTMIN}, заканчиваются \cmint{SIGRTMAX}
+      \item Вместе с сигналом посылается специальная метаинформация (правда, только число), которую можно как-то использовать
+      \item Получить эту дополнительную информацию можно через \cmint{siginfo_t->si_value}
+    \end{itemize}
+  
+    \begin{cminted}
+#include <signal.h>
+
+union sigval {
+  int    sival_int;
+  void*  sival_ptr;
+};
+
+int sigqueue(pid_t pid, int signum, const union sigval value);  
+    \end{cminted}
+
+  \subsection{Обработка сигналов с помощью пайпов}
+    \begin{itemize}
+      \item Иногда не хочется возиться с атомарными счётчиками или хочется выполнить какие-то нетривиальные действия в обработчике
+      \item Или в обработчике нет какого-то нужного контекста (экземпляра класса итд)
+      \item Помогает трюк с пайпами
+      \item В обработчике будем писать номер сигнала (или какую-то другую информацию) в пайп
+      \item В основной программе будем делать read на другой конец пайпа
+      \item \textbf{\textit{Важно}}: write-конец пайпа должен быть с флагом \cmint{O_NONBLOCKING}, иначе возможен дедлок
+    \end{itemize}
+  
+  \subsection{Использование сигналов}
+  \subsubsection{nginx}
+    \begin{itemize}
+      \item Если поменялся конфиг nginx, то как его подхватить заново?
+      \item Постоянный траффик от клиентов $\Rightarrow$ перезапуск невозможен
+      \item Сигналы приходят на помощь!
+      \item \cmint{SIGHUP} сигнализирует nginx о том, что конфиг поменялся и его нужно перечитать и применить
+      \item \cmint{SIGTERM} сигнализирует nginx о том, что нужно остановить обработку запросов как можно скорее и завершиться
+      \item \cmint{SIGUSR1} используется для hot upgrade
+    \end{itemize}
+  
+  \subsubsection{golang}
+    \begin{itemize}
+      \item Реализация preemptive multitasking
+      \item Внутри Go реализованы лёгкие потоки -- горутины (coopeative multitasking)
+      \item Иногда горутины могут зависать (если, например, много вычислений) и их нужно уметь принудительно вытеснять
+      \item Отдельный тред \cmint{sysmon}, который следит за остальными тредами, исполняющими горутины
+      \item Если какая-то горутина зависает больше, чем на 10 мс, посылается \cmint{SIGURG} и её выполнение прерывается
+    \end{itemize}

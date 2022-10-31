@@ -14,7 +14,7 @@
   \label{fig:elf_structure}
 \end{figure} 
   
-\subsection{ELF: header}
+\subsubsection{ELF: header}
 
 \begin{cminted}
 typedef struct elf64_hdr {
@@ -87,7 +87,7 @@ typedef struct elf64_phdr {
 
 Разница между \cmint{p_memsz} и \cmint{p_filesz} существует и обуславливается наличием сегмента .bss, в котором хранятся статические переменные, инициализирируемые нулями. Такие переменные не хранятся на диске, но при запуске программы место под них отводится. Поэтому \cmint{p_filesz} -- это размер на диске, а \cmint{p_memsz} -- размер загружаемого файла.
 
-\subsection{execve}
+\subsection{execve: принципы работы}
   \begin{itemize}
     \item Парсит первые несколько байт файла
     \item Ищет ELF magic или shebang
@@ -135,8 +135,8 @@ typedef struct elf64_phdr {
   
     И другие проблемы:
     \begin{itemize}
-      \item Два процесса NI = 0 и NI = 1 vs два процесса NI = +18 и NI = +19
-      \item \bmint{5ms/10ms} vs \bmint{95ms/105ms}
+      \item Два процесса NI = 0 и NI = 1 vs. два процесса NI = +18 и NI = +19
+      \item \bmint{5ms/10ms} vs. \bmint{95ms/105ms}
       \item Нелинейность относительно стартового значения
     \end{itemize}
   
