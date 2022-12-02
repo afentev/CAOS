@@ -1,0 +1,273 @@
+\section{Сети, часть 1. Модель OSI}
+  \subsection{Протоколы}
+    \begin{itemize}
+      \item Современные сети строятся на основе \textit{протоколов}
+      \item Каждый протокол -- абстракция над другим протоколом (более низким) для решения какой-то проблемы
+      \item Поэтому иногда говорят \textit{стек протоколов}
+    \end{itemize}
+  
+  \subsection{Модель OSI}
+  OSI разделяет современные протоколы на 7 уровней:
+  \begin{itemize}
+    \item Layer 1: Physical layer
+    \item Layer 2: Data link layer
+    \item Layer 3: Network layer
+    \item Layer 4: Transport layer
+    \item \textit{тут немного пропустим}
+    \item Layer 7: Application layer
+  \end{itemize}
+  
+  \subsubsection{Модель OSI: physical layer}
+    \textit{Как данные будут переданы через физическую среду?}
+    Протоколы:
+    \begin{itemize}
+      \item Bluetooth
+      \item Ethernet physical layer: Ethernet over twisted pair, Fast Ethernet, Gigabit Ethernet, ...
+      \item IEEE 802.11g/b/n
+    \end{itemize}
+  
+  \subsubsection{Link layer}
+    \textit{Как компьютеры могут общаться в локальной сети?}
+    \begin{itemize}
+      \item Обеспечивает обмен данными между узлами в одной сети LAN (local area network)
+      \item Обычно на этом уровне протоколы оперируют пакетами (фреймами) (например, 1500 байт для Ether)
+      \item На этом уровне появляется канальный адрес (link address), например, MAC-адрес
+    \end{itemize}
+    Есть 2 среды, в которых передаются данные. P2P, когда два участника соединены непосредственно между собой, и в их общение трудно вмешаться. А есть среды full-mesh.
+  
+  \subsubsection{Network layer}
+    \textit{Как объединить локальные сети?}
+    \begin{itemize}
+      \item Обеспечивает связь между разными LAN
+      \item На этом уровне появляется сетевой адрес (например, IP адрес)
+      \item Появляется понятия \textit{маршрутизации}
+      \item Основной протокол -- Internet Protocol (IP)
+    \end{itemize}
+  
+  \subsubsection{Transport layer}
+    \textit{Как обеспечить обмен данными между приложениями?}
+    \begin{itemize}
+      \item Используется для передачи данных между различными приложениями на узлах сети
+      \item Используются \textit{порты}, чтобы разделять приложения на концах маршрутов
+      \item Примеры: TCP, UDP, SCTP
+    \end{itemize}
+  
+  \subsubsection{Application layer}
+    \textit{Как каждое конкретное приложение обменивается данными?}
+    \begin{itemize}
+      \item Протоколы приложений (веб-браузеры, почтовые клиенты, игры)
+      \item Один из самых известных -- HyperText Transfer Protocol (HTTP)
+      \item Почтовые протоколы -- SMTP, POP3
+      \item Secure Shell (SSH)
+    \end{itemize}
+  
+  \subsection{Ethernet}
+    \begin{itemize}
+      \item Совокупность стандартов (IEEE 803.2), описывающие разные протоколы physical и link layer
+      \item Передача между устройствами осуществляется с помощью фреймов
+      \item Каждое устройство имеет свой MAC-адрес
+      \item Ethernet 803.11 -- это point-to-point протокол, используются коммутаторы (или свитчи) для построения full-mesh сети
+      \item Свитч имеет таблицу всех подключенных клиентов и форвардит фреймы в соответствии с ней
+      \item \bmint{FF:FF:FF:FF:FF:FF} -- это специальный \textit{broadcast} адрес
+    \end{itemize}
+  
+  \subsection{Internet Protocol}
+    \begin{itemize}
+      \item Протокол для объединения LAN
+      \item Две версии: IPv4 vs IPv6
+      \item IPv4 широко распространен, IPv6 только начинает появляться
+    \end{itemize}
+  
+  \subsection{IP}
+  \subsubsection{IP адреса}
+    \begin{itemize}
+      \item IPv4 адрес состоит из 32 бит (для IPv6 -- 128)
+      \item Обычно записывается в виде 4 октетов (4 байт) через точку: 8.8.8.8
+    \end{itemize}
+  
+  \subsubsection{Маска подсети}
+    \begin{itemize}
+      \item Множество IP-адресов с одинаковым \textit{префиксом}
+      \item Маска подсети: \cmint{255.0.0.0}
+      \item CIDR-нотация: \cmint{10.0.0.0/8}
+      \item Private subnets: \cmint{10.0.0.0/8}, \cmint{127.0.0.1/8}, \cmint{192.168.0.0/16}
+    \end{itemize}
+  
+  \subsubsection{IP: маршрутизация}
+    \begin{itemize}
+      \item Не все узлы сети связаны напрямую $\Rightarrow$ давайте передавать данные через другие узлы
+      \item Передача между соседними узлами в IP-сети называется прыжком или хопом (hop)
+      \item Каждый узел сети имеет \textit{таблицу маршрутизации}
+      \item Эта таблица содержит маску подсетей и \textit{gateway} -- узел, куда нужно переслать данные
+    \end{itemize}
+  
+  \subsubsection{ARP}
+    \begin{itemize}
+      \item Address Resolution Protocol
+      \item Определяет MAC-адрес по IP
+      \item Рассылается broadcast пакет `Who has 10.0.0.2? Tell 10.0.0.1'
+      \item Все хосты проверяют свой IP и если он совпадает, отсылают `10.0.0.2 is at XX:XX:XX:XX:XX:XX'
+      \item ARP spoofing
+    \end{itemize}
+  
+  \subsubsection{IP: маршрутизация}
+    \begin{itemize}
+      \item AS -- это система IP-сетей и маршрутизаторов, управляемых одним или несколькими операторами, имеющими единую политику маршрутизации с Интернетом (\copyright Wiki)
+      \item Блоки подсетей выдаются автономным сетям
+      \item Точка обмена трафиком -- точки обмена трафиком между разными AS
+      \item Одна из самых крупных в Европе и России -- MASK-IX
+    \end{itemize}
+  
+  \subsubsection{IPv4: устройство пакета}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{/Users/user/Downloads/ipv4_header.png}
+  \caption{IPv4 Header format}
+  \label{fig:ipv4_format}
+\end{figure}
+  
+  \subsubsection{IP: TTL}
+    \begin{itemize}
+      \item TTL -- time to live
+      \item Байт, который описывает максимальное количество прыжков в сети
+      \item Если очередной хост уменьшил TTL до нуля, то пакет просто дропается, а отправителю посылается специальное сообщение по протоколу ICMP (TTL exceeded)
+      \item На основе этого поведения работает trecroute/tracepath
+    \end{itemize}
+  
+  \subsubsection{IP: проблемы}
+    \begin{itemize}
+      \item Не гарантирует доставку данных (packet loss)
+      \item Не гарантирует порядок доставки (packet reordering)
+      \item Не гарантирует, что пакет будет отправлен лишь один раз (packet duplication)
+      \item Непонятно как реализовывать multitenancy IP протокола – нельзя всем приложениям рассылать все IP-пакеты
+    \end{itemize}
+  
+  \subsection{BGP}
+    \begin{itemize}
+      \item Как операторам AS обновлять маршруты?
+      \item Border gateway protocol 
+      \item Устанавливается между BGP-роутерами соседних AS
+      \item Каждая AS анонсирует свои префиксы (подсети)
+      \item Изменения распространяются по всему интернету
+      \item Выбирается самый `короткий' маршрут
+      \item Таблица маршрутизации Интернета очень большая: на текущий момент 900k+ префиксов
+    \end{itemize}
+  
+  \subsection{TCP}
+    \begin{itemize}
+      \item Вводит понятие \textit{порта} приложения -- адрес получателя на IP-узле
+      \item Обеспечивает надежную доставку данных (reliable delivery)
+      \item Обеспечивает порядок доставки и дедупликацию данных
+      \item Connection-orinted -- приложения должны установить полнодуплексное \textit{соединение}
+      \item Data stream -- данные передаются не отдельными пакетами, а непрерывным потоком
+      \item Также обеспечивает congestion control и flow control
+    \end{itemize}
+  
+  \subsubsection{TCP: устройство пакета}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{/Users/user/Downloads/tcp_header.png}
+  \caption{TCP segment format}
+  \label{fig:tcp_format}
+\end{figure}
+  
+  \subsubsection{TCP: 3-way handshake}
+    Хендшейк -- механим установки соединения. Выполняется в три этапа:
+    \begin{enumerate}
+      \item Инициатор соединения (клиент) посылает пакет с флагом SYN серверу
+      \item Сервер посылает пакет с флагами SYN и ACK клиенту, а также sequence number, с которого будут нумероваться все остальные байты
+      \item Клиент посылает ACK
+    \end{enumerate}
+  
+  \subsubsection{TCP}
+    \begin{itemize}
+      \item Transmission Control Protocol
+      \item Отправитель посылает пронумерованные пакеты, что позволяет реконструировать правильную последовательность при переупорядочивании 
+      \item Принимающий в ответ отправляет `одобрения': `принято все до номера N'
+      \item Если пакет теряется, то acknowledgment (ACK) долго не приходит, отправитель перепосылает пакет
+      \item Если пришел повторный ACK, то отправитель тоже перепосылает пакет
+    \end{itemize}
+  
+  \subsection{UDP}
+    \begin{itemize}
+      \item User Datagram Protocol
+      \item Не даёт никаких гарантий
+      \item Пересылка осуществляется через пакеты (UDP datagrams)
+      \item Используется там, где неважна последовательность пакетов (например, онлайн игры или торренты)
+      \item Или там, где потеря/переупорядочивание/дублирование не сильно сказывается (например, звонки)
+    \end{itemize}
+  
+  \subsection{DNS}
+    \begin{itemize}
+      \item Позволяет преобразовывать человекочитаемые доменные имена в IP-адреса
+      \item Работает поверх UDP, стандартный порт – 53
+      \item Корневые сервера обслуживают все запросы DNS в интернете
+      \item Результат кэшируется и имеет время жизни, заданное в ответе DNS (TTL)
+      \item Корневые сервера спускаются к более мелким DNS серверам (например, к .ru)
+      \item Более мелкие могут спускаться дальше итд – recursive resolving
+    \end{itemize}
+  
+  \subsubsection{DNS: виды записей}
+    \begin{itemize}
+      \item \textbf{A} запись: имя -> IPv4 адрес
+      \item \textbf{AAAA} запись: имя -> IPv6 адрес
+      \item \textbf{NS} запись: имя -> авторитетный DNS-сервер
+      \item \textbf{CNAME} запись: имя -> имя
+    \end{itemize}
+  
+  \subsection{HTTP}
+    \begin{itemize}
+      \item HyperText Transport Protocol
+      \item L7 протокол
+      \item Запрос-ответ: клиент отправляет запросы, сервер возвращает ответами
+      \item Человеко-читаемый
+      \item Для перевода строк служит \textbackslash r\textbackslash n
+    \end{itemize}
+  
+  \subsubsection{HTTP: запрос}
+    \begin{itemize}
+      \item Метод: GET, POST, DELETE, PUT, OPTIONS, HEAD
+      \item Uniform Resource Identifier (URI) – путь запроса
+      \item Версия HTTP
+      \item Заголовки
+      \item Тело (опционально)
+    \end{itemize}
+    
+    \begin{bminted}
+POST /cgi-bin/process.cgi HTTP/1.1
+User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)
+Host: www.tutorialspoint.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: length
+Accept-Language: en-us
+Accept-Encoding: gzip, deflate
+Connection: Keep-Alive
+
+licenseID=string&content=string&/paramsXML=string  
+    \end{bminted}
+  
+  \subsubsection{HTTP: ответ}
+    \begin{itemize}
+      \item Версия HTTP
+      \item Код (статус) ответа
+      \item Расшифровка ответа (reason)
+    \end{itemize}
+    
+        \begin{bminted}
+HTTP/1.1 404 Not Found
+Date: Sun, 18 Oct 2012 10:36:20 GMT
+Server: Apache/2.2.14 (Win32)
+Content-Length: 230
+Connection: Closed
+Content-Type: text/html; charset=iso-8859-1
+    \end{bminted}
+  
+  \subsubsection{HTTP: статус коды}
+    \begin{itemize}
+      \item \textbf{1xx} – информационные
+      \item \textbf{2хх} – успешные коды (например, 200 OK)
+      \item \textbf{3xx} – для перенаправлений пользователей (редиректы)
+      \item \textbf{4xx} – ошибка клиента (неправильный адрес, некорретный запрос)
+      \item \textbf{5xx} – ошибка сервера (внутреняя ошибка, сервис временно недоступен)
+    \end{itemize}
+

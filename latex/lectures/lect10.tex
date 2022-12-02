@@ -1,0 +1,189 @@
+\newpage
+\section{Ассемблер x86}
+  \subsection{Програмное управление}
+    \begin{itemize}
+      \item Программа и данные хранятся в оперативной памяти
+      \item Программа кодируется в виде инструкций процессора
+      \item Шаги выполнения инструкции:
+      \begin{enumerate}
+        \item Instruction fetch
+        \item Instruction decode and register fetch
+        \item Execute
+        \item Memory access
+        \item Register write back
+      \end{enumerate}
+    \end{itemize}
+  
+  \subsection{Ассемблер}
+    \begin{itemize}
+      \item Максимально приближен к машинному коду
+      \item Вследствие этого платформозависимый
+    \end{itemize}
+  
+  \subsection{CISC vs RISC}
+    \begin{itemize}
+      \item Complex(Reduced) Instruction Set Computers
+      \item x86 CISC, ARM RISC
+      \item Переменная длина инструкции и больше набор инструкций
+      \item Сложности с пайпланингом
+      \item Инструкции исполняются разное число тактов
+    \end{itemize}
+  
+  \subsection{Регистры}
+    \begin{itemize}
+      \item Очень быстрые ячейки памяти на самом процессоре
+      \item по 64 бита на x86-64
+      \item числа в two-complement little endian
+      \item Регистры общего назначения: \cmint{rax}, \cmint{rbx}, \cmint{rcx}, \cmint{rdx}, \cmint{rsi}, \cmint{rdi}, \cmint{r8}-\cmint{r15}
+      \item Специальные: \cmint{rbp}, \cmint{rsp}, \cmint{rip}, \cmint{rflags}, ...
+    \end{itemize}
+  
+  \subsection{Вложенность регистров}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{/Users/user/Downloads/register.png}
+  \caption{Registers}
+  \label{fig:registers}
+\end{figure}
+
+  \subsection{Команды}
+    \begin{asmminted}
+label_name:
+  cmd op1, op2, ...  
+    \end{asmminted}
+    
+    Типы операндов команд:
+    \begin{itemize}
+      \item \cmint{imm} — константы
+      \item \cmint{r} — регистры
+      \item \cmint{m} — память
+    \end{itemize}
+    Хотя бы один из операндов должен быть регистром.
+  
+  \subsection{Intel vs AT\&T синтаксисы}
+    \begin{itemize}
+      \item Intel: \asmmint{mov rax, [rax, 2 * rcx + 0x10]}
+      \item AT\&T: \bmint{mov 0x10(%rax, %rcx, 2), %rax}
+    \end{itemize}
+  
+  \subsection{Работа с памятью}
+    \begin{itemize}
+      \item \asmmint{mov} загружает значение ячейки памяти
+      \item \asmmint{lea} загружает адрес ячейки памяти
+    \end{itemize}
+    Например: \asmmint{mov rax, [rsi]}
+  
+  \subsection{Арифметика}
+    \begin{itemize}
+      \item \asmmint{add}
+      \item \asmmint{sub}
+      \item \asmmint{mul}
+      \item \asmmint{div}
+    \end{itemize}
+    
+    Например: \asmmint{add dst, src}
+
+  \subsection{Флаги}
+    \begin{itemize}
+      \item Регистр EFLAGS содержит специальные биты-флаги результата операции
+      \item Основные флаги:
+      \begin{enumerate}
+        \item \asmmint{ZF} в результате операции получился 0
+        \item \asmmint{SF} результат отрицательный
+        \item \asmmint{OF} знаковое переполнение
+        \item \asmmint{CF} беззнаковое переполнение
+      \end{enumerate}
+    \end{itemize}
+  
+  \subsubsection{Примеры выставления флагов}
+    Для простоты будем рассуждать в терминах 4-битных чисел:
+    \begin{itemize}
+      \item \bmint{0x0001 - 0x0001 = 0x0000} (выставится \asmmint{ZF})
+      \item \bmint{0x0000 - 0x0001 = 0x1111} (выставится \asmmint{SF})
+      \item \bmint{0x1111 + 0x0001 = 0x0000} (выставится \asmmint{CF})
+      \item \bmint{0x0111 + 0x0001 = 0x1000} (выставится \asmmint{OF})
+    \end{itemize}
+    
+  \subsubsection{Вычисление флагов}
+    \begin{itemize}
+      \item Есть инструкции для вычисления флагов без изменения регистров общего назначения
+      \item Результат используется для условных переходов
+      \item \asmmint{cmp} (аналог \asmmint{sub})
+      \item \asmmint{test} (аналог \asmmint{and})
+    \end{itemize}
+  
+  \subsection{Переходы}
+    \begin{itemize}
+      \item \asmmint{j**} label\_name перейти на метку
+      \item \asmmint{jmp} безусловный переход
+      \item \asmmint{jz} перейти, если выставлен \asmmint{ZF}
+      \item Для знакомых чисел \asmmint{jl}, \asmmint{jle} и т. д.
+      \item Для беззнаковых чисел \asmmint{jb}, \asmmint{jbe} и т. д.
+    \end{itemize}
+  
+  \subsection{Godbolt}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{/Users/user/Downloads/godbolt.png}
+  \caption{Godbolt}
+  \label{fig:godbolt}
+\end{figure}
+
+  \subsection{Calling conventions}
+    \begin{itemize}
+      \item \asmmint{rsp} указывает на вершину стека
+      \item Первые 6 аргументов передаются в регистрах \asmmint{rdi}, \asmmint{rsi}, \asmmint{rdx}, \asmmint{rcx}, \asmmint{r8}, \asmmint{r9}, остальные на стеке
+      \item Возвращается значение в \asmmint{rax}
+      \item При вызове функции через \asmmint{call} на вершину кладётся адрес возврата
+      \item \asmmint{ret} достаёт со стека адрес возврата и переходит по нему
+    \end{itemize}
+    
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\linewidth]{/Users/user/Downloads/stack_x64.png}
+  \caption{Stack}
+  \label{fig:stack}
+\end{figure}
+
+    \begin{itemize}
+      \item При вызове функций вершин стека (\asmmint{rsp}) должна быть выровнена по 16 байт
+      \item Нужно сохранить значения \asmmint{rax}, \asmmint{rdi}, \asmmint{rsi}, \asmmint{rdx}, \asmmint{rcx}, \asmmint{r8}, \asmmint{r9}, \asmmint{r10}, \asmmint{r11}, если они вам нужны
+      \item \asmmint{rbx}, \asmmint{rsp}, \asmmint{rbp}, \asmmint{r12}, \asmmint{r13}, \asmmint{r14}, \asmmint{r15} нужно вернуть в неизменном виде после выхода из функции
+    \end{itemize}
+  
+  \subsection{Векторные регистры}
+    \begin{itemize}
+      \item SIMD (single instruction multiple data)
+      \item SSE/AVX/AVX-512
+      \item \asmmint{xmm0}-\asmmint{xmm15}, \asmmint{ymm0}-\asmmint{ymm15}, \asmmint{zmm0}-\asmmint{zmm15}, caller-saved
+      \item Аргументы передаются в \asmmint{xmm0}-\asmmint{xmm7}
+      \item Возвращаемое значение в \asmmint{xmm0}
+    \end{itemize}
+  
+  \subsection{Скалярные инструкции}
+    \begin{itemize}
+      \item Суффикс \asmmint{sd} означает \asmmint{double}, \asmmint{ss} означает \asmmint{float}
+      \item Арифметика: \asmmint{addsd dst, src}
+      \item Преобразование типов: \asmmint{cvtsi2sd dst, src}
+      \item Сравнение: \asmmint{comisd dst, src}
+    \end{itemize}
+  
+  \subsection{Векторные инструкции}
+    Общий вид: \bmint{op[ap|up][s|d] dst, src}
+    \begin{itemize}
+      \item \asmmint{ap} для загрузки из памяти, выровненной по длине регистра
+      \item \asmmint{s} для \asmmint{float}, \asmmint{d} для \asmmint{double}
+    \end{itemize}
+    Пример: \asmmint{addps xmm0, xmm1}
+    Для AVX: \asmmint{vaddps xmm0, xmm1, xmm2}
+  
+  \subsubsection{Intrinsincs}
+    Расширения компилятора, позволяющие использовать векторные инструкции в коде на C.
+    \begin{cminted}
+for (int i = 0; i < n; i+= 8) {
+  __m256 r1 = _mm256_load_ps(a + i);
+  __m256 r2 = _mm256_load_ps(b + i);
+  __m256 r3 = _mm256_add_ps(r1, r2);
+  _mm256_store_ps(&c[i], r3);
+}  
+    \end{cminted}
