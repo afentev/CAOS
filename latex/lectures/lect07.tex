@@ -161,7 +161,7 @@ siginfo_t {
       \item \cmint{int sigsuspend(const sigset_t* mask)}
       \item Атомарно заменяет маску заблокированных сигналов на mask и ждёт первой доставки сигналов
       \item \cmint{int sigwaitinfo(const sigset_t* restrict set, siginfo_t* restrict info)}
-      \item Требует вызова \todo{что-то}
+      \item Требует вызова \cmint{sigprocmask} перед собой
     \end{itemize}
   
   \subsection{Как устроены сигналы?}
